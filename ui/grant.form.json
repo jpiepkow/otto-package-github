@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.grant_form",
+  "title": "GitHub Grant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mode",
+    "auth_mode",
+    "allowed_repos",
+    "allowed_refs",
+    "max_file_lines",
+    "max_file_bytes",
+    "max_matches",
+    "context_lines",
+    "max_clone_bytes"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "title": "Grant mode",
+      "enum": [
+        "read",
+        "write"
+      ],
+      "default": "read"
+    },
+    "auth_mode": {
+      "type": "string",
+      "title": "Authentication mode",
+      "enum": [
+        "host",
+        "token"
+      ],
+      "default": "host"
+    },
+    "credential_ref": {
+      "type": "string",
+      "title": "Credential reference",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "allowed_repos": {
+      "type": "array",
+      "title": "Allowed repositories",
+      "minItems": 1,
+      "maxItems": 50,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/repository"
+      }
+    },
+    "allowed_refs": {
+      "type": "array",
+      "title": "Allowed refs",
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 255
+      }
+    },
+    "max_file_lines": {
+      "type": "integer",
+      "title": "Maximum file lines",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 120
+    },
+    "max_file_bytes": {
+      "type": "integer",
+      "title": "Maximum file bytes",
+      "minimum": 1024,
+      "maximum": 262144,
+      "default": 32768
+    },
+    "max_matches": {
+      "type": "integer",
+      "title": "Maximum search matches",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 20
+    },
+    "context_lines": {
+      "type": "integer",
+      "title": "Search context lines",
+      "minimum": 0,
+      "maximum": 20,
+      "default": 3
+    },
+    "max_clone_bytes": {
+      "type": "integer",
+      "title": "Maximum clone bytes",
+      "minimum": 1048576,
+      "maximum": 5368709120,
+      "default": 524288000
+    }
+  },
+  "x-otto-form": {
+    "id": "github_grant",
+    "sections": [
+      {
+        "id": "scope",
+        "fields": [
+          "mode",
+          "auth_mode",
+          "credential_ref",
+          "allowed_repos",
+          "allowed_refs"
+        ]
+      },
+      {
+        "id": "limits",
+        "fields": [
+          "max_file_lines",
+          "max_file_bytes",
+          "max_matches",
+          "context_lines",
+          "max_clone_bytes"
+        ]
+      }
+    ]
+  },
+  "$defs": {
+    "repository": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.setup_details",
+  "title": "GitHub Setup Details",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mode",
+    "fake_mode",
+    "gh_version",
+    "gh_authenticated",
+    "auth_mode",
+    "status"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "read",
+        "write"
+      ]
+    },
+    "fake_mode": {
+      "type": "boolean"
+    },
+    "gh_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "gh_authenticated": {
+      "type": "boolean"
+    },
+    "auth_mode": {
+      "type": "string",
+      "enum": [
+        "host",
+        "token"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "gh_missing",
+        "not_authenticated"
+      ]
+    },
+    "gh_account": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "setup_error_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    }
+  }
+}

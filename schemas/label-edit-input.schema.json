@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.label_edit_input",
+  "title": "Edit GitHub Label Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "name"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "grant-scope.schema.json#/$defs/repository"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^[0-9A-Fa-f]{6}$"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1024
+    }
+  }
+}

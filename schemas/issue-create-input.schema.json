@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.issue_create_input",
+  "title": "Create GitHub Issue Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "title"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "grant-scope.schema.json#/$defs/repository"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 65536
+    }
+  }
+}

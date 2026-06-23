@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.branch_delete_input",
+  "title": "Delete GitHub Branch Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "branch"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "grant-scope.schema.json#/$defs/repository"
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    }
+  }
+}

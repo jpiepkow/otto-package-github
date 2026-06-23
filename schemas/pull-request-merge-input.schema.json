@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.pull_request_merge_input",
+  "title": "Merge Pull Request Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "number"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "grant-scope.schema.json#/$defs/repository"
+    },
+    "number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "merge",
+        "squash",
+        "rebase"
+      ],
+      "default": "merge"
+    }
+  }
+}

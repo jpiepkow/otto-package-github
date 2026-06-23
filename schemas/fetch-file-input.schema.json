@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.fetch_file_input",
+  "title": "Fetch GitHub File Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "path"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "grant-scope.schema.json#/$defs/repository"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "default": "HEAD"
+    },
+    "line_start": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "line_end": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.git_stage_input",
+  "title": "Stage Git Changes Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "grant-scope.schema.json#/$defs/repository"
+    },
+    "paths": {
+      "type": "array",
+      "default": [
+        "."
+      ],
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      }
+    }
+  }
+}

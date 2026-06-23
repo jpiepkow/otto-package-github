@@ -1,0 +1,373 @@
+schema_version = 1
+package_id = "com.otto.github"
+display_name = "Default GitHub Tools"
+protocol_version = "otto.extension.rpc.v1"
+icon = "assets/icon.svg"
+triggers = []
+migrations = []
+redaction = []
+
+[runtime]
+command = "bin/otto-tool-github"
+args = []
+idle_timeout_ms = 30000
+health_timeout_ms = 2000
+
+[build]
+command = "cargo build --release && mkdir -p bin && cp target/release/otto-tool-github bin/otto-tool-github"
+
+[provides.tools]
+version = 1
+
+[[roles]]
+id = "role.default.tool.github"
+kind = "tool_package"
+display_name = "Default GitHub tool package"
+capabilities = ["cap.default.github.read", "cap.default.github.write"]
+
+[[schemas]]
+id = "schema.default.github.setup_details"
+path = "schemas/setup-details.schema.json"
+description = "GitHub setup-check details"
+
+[[schemas]]
+id = "schema.default.github.grant_scope"
+path = "schemas/grant-scope.schema.json"
+description = "GitHub tool grant scope"
+
+[[schemas]]
+id = "schema.default.github.read_output"
+path = "schemas/read-output.schema.json"
+description = "Bounded GitHub read output"
+
+[[schemas]]
+id = "schema.default.github.search_code_input"
+path = "schemas/search-code-input.schema.json"
+description = "Search code input"
+
+[[schemas]]
+id = "schema.default.github.fetch_file_input"
+path = "schemas/fetch-file-input.schema.json"
+description = "Fetch file input"
+
+[[schemas]]
+id = "schema.default.github.list_commits_input"
+path = "schemas/list-commits-input.schema.json"
+description = "List commits input"
+
+[[schemas]]
+id = "schema.default.github.list_pull_requests_input"
+path = "schemas/list-pull-requests-input.schema.json"
+description = "List pull requests input"
+
+[[schemas]]
+id = "schema.default.github.list_issues_input"
+path = "schemas/list-issues-input.schema.json"
+description = "List issues input"
+
+[[schemas]]
+id = "schema.default.github.prepare_checkout_input"
+path = "schemas/prepare-checkout-input.schema.json"
+description = "Prepare checkout input"
+
+[[schemas]]
+id = "schema.default.github.prepare_checkout_output"
+path = "schemas/prepare-checkout-output.schema.json"
+description = "Prepare checkout output"
+
+[[schemas]]
+id = "schema.default.github.git_stage_input"
+path = "schemas/git-stage-input.schema.json"
+description = "Stage Git changes input"
+
+[[schemas]]
+id = "schema.default.github.git_commit_input"
+path = "schemas/git-commit-input.schema.json"
+description = "Commit Git changes input"
+
+[[schemas]]
+id = "schema.default.github.branch_create_input"
+path = "schemas/branch-create-input.schema.json"
+description = "Create Git branch input"
+
+[[schemas]]
+id = "schema.default.github.git_push_input"
+path = "schemas/git-push-input.schema.json"
+description = "Push Git ref input"
+
+[[schemas]]
+id = "schema.default.github.pull_request_open_input"
+path = "schemas/pull-request-open-input.schema.json"
+description = "Open pull request input"
+
+[[schemas]]
+id = "schema.default.github.pull_request_merge_input"
+path = "schemas/pull-request-merge-input.schema.json"
+description = "Merge pull request input"
+
+[[schemas]]
+id = "schema.default.github.comment_input"
+path = "schemas/comment-input.schema.json"
+description = "Comment input"
+
+[[schemas]]
+id = "schema.default.github.issue_create_input"
+path = "schemas/issue-create-input.schema.json"
+description = "Create issue input"
+
+[[schemas]]
+id = "schema.default.github.label_edit_input"
+path = "schemas/label-edit-input.schema.json"
+description = "Edit label input"
+
+[[schemas]]
+id = "schema.default.github.branch_delete_input"
+path = "schemas/branch-delete-input.schema.json"
+description = "Delete branch input"
+
+[[schemas]]
+id = "schema.default.github.write_output"
+path = "schemas/write-output.schema.json"
+description = "GitHub write-result output"
+
+[[schemas]]
+id = "schema.default.github.setup_form"
+path = "ui/setup.form.json"
+description = "GitHub setup form schema"
+
+[[schemas]]
+id = "schema.default.github.grant_form"
+path = "ui/grant.form.json"
+description = "GitHub grant form schema"
+
+[[tools]]
+id = "tool.default.github.search_code"
+display_name = "Search GitHub code"
+description = "Search GitHub code through the host gh CLI. Use this for cross-repository discovery before fetching a specific file or preparing a checkout."
+input_schema = "schema.default.github.search_code_input"
+output_schema = "schema.default.github.read_output"
+required_capabilities = ["cap.default.github.read"]
+requires_approval = false
+runtime_commands = ["gh", "git"]
+scope_defaults = { max_matches = 20, context_lines = 3, max_file_bytes = 32768 }
+
+[[tools]]
+id = "tool.default.github.fetch_file"
+display_name = "Fetch GitHub file"
+description = "Fetch a bounded file slice from GitHub at a repository ref through the API. Use this when the path is known and a full checkout is unnecessary."
+input_schema = "schema.default.github.fetch_file_input"
+output_schema = "schema.default.github.read_output"
+required_capabilities = ["cap.default.github.read"]
+requires_approval = false
+runtime_commands = ["gh", "git"]
+scope_defaults = { max_lines = 120, max_bytes = 32768 }
+
+[[tools]]
+id = "tool.default.github.list_commits"
+display_name = "List GitHub commits"
+description = "List recent commits for a granted repository and ref. Use this to understand recent changes before investigating files or preparing a checkout."
+input_schema = "schema.default.github.list_commits_input"
+output_schema = "schema.default.github.read_output"
+required_capabilities = ["cap.default.github.read"]
+requires_approval = false
+runtime_commands = ["gh", "git"]
+scope_defaults = { max_results = 30 }
+
+[[tools]]
+id = "tool.default.github.list_pull_requests"
+display_name = "List GitHub pull requests"
+description = "List pull requests for a granted repository. Use this to inspect active work, branch names, and review state before opening or commenting on a PR."
+input_schema = "schema.default.github.list_pull_requests_input"
+output_schema = "schema.default.github.read_output"
+required_capabilities = ["cap.default.github.read"]
+requires_approval = false
+runtime_commands = ["gh", "git"]
+scope_defaults = { max_results = 30 }
+
+[[tools]]
+id = "tool.default.github.list_issues"
+display_name = "List GitHub issues"
+description = "List issues for a granted repository. Use this to find existing incident reports, bugs, or tasks before creating a new issue."
+input_schema = "schema.default.github.list_issues_input"
+output_schema = "schema.default.github.read_output"
+required_capabilities = ["cap.default.github.read"]
+requires_approval = false
+runtime_commands = ["gh", "git"]
+scope_defaults = { max_results = 30 }
+
+[[tools]]
+id = "tool.default.github.prepare_checkout"
+display_name = "Prepare GitHub checkout"
+description = "Prepare a host-owned repository checkout for a granted repository and ref, returning the container mount path for agent file investigation."
+input_schema = "schema.default.github.prepare_checkout_input"
+output_schema = "schema.default.github.prepare_checkout_output"
+required_capabilities = ["cap.default.github.read"]
+requires_approval = false
+runtime_commands = ["gh", "git"]
+scope_defaults = { max_clone_bytes = 524288000 }
+
+[[tools]]
+id = "tool.default.github.git_stage"
+display_name = "Stage Git changes"
+description = "Stage selected paths in a prepared checkout. This mutating git operation requires Otto approval before execution."
+input_schema = "schema.default.github.git_stage_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.git_commit"
+display_name = "Commit Git changes"
+description = "Create a commit in a prepared checkout with a supplied message. This mutating git operation requires Otto approval before execution."
+input_schema = "schema.default.github.git_commit_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.branch_create"
+display_name = "Create Git branch"
+description = "Create a local branch in a prepared checkout. This mutating git operation requires Otto approval before execution."
+input_schema = "schema.default.github.branch_create_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.git_push"
+display_name = "Push Git branch"
+description = "Push a refspec to GitHub, including force pushes when explicitly requested. This remote mutation requires Otto approval before execution."
+input_schema = "schema.default.github.git_push_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.pull_request_open"
+display_name = "Open GitHub pull request"
+description = "Open a pull request on GitHub from an approved branch and base. This remote mutation requires Otto approval before execution."
+input_schema = "schema.default.github.pull_request_open_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.pull_request_merge"
+display_name = "Merge GitHub pull request"
+description = "Merge an approved pull request, including protected-branch merges when GitHub permits them. This destructive remote mutation requires Otto approval before execution."
+input_schema = "schema.default.github.pull_request_merge_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.comment"
+display_name = "Comment on GitHub"
+description = "Add a comment to a GitHub issue or pull request. This remote write requires Otto approval before execution."
+input_schema = "schema.default.github.comment_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.issue_create"
+display_name = "Create GitHub issue"
+description = "Create a GitHub issue in a granted repository. This remote write requires Otto approval before execution."
+input_schema = "schema.default.github.issue_create_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.label_edit"
+display_name = "Edit GitHub label"
+description = "Create or update a GitHub label in a granted repository. This remote mutation requires Otto approval before execution."
+input_schema = "schema.default.github.label_edit_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[[tools]]
+id = "tool.default.github.branch_delete"
+display_name = "Delete GitHub branch"
+description = "Delete a branch reference on GitHub. This destructive remote mutation requires Otto approval before execution."
+input_schema = "schema.default.github.branch_delete_input"
+output_schema = "schema.default.github.write_output"
+required_capabilities = ["cap.default.github.write"]
+requires_approval = true
+runtime_commands = ["gh", "git"]
+
+[bundles]
+read = [
+  "tool.default.github.search_code",
+  "tool.default.github.fetch_file",
+  "tool.default.github.list_commits",
+  "tool.default.github.list_pull_requests",
+  "tool.default.github.list_issues",
+  "tool.default.github.prepare_checkout",
+]
+write = [
+  "tool.default.github.git_stage",
+  "tool.default.github.git_commit",
+  "tool.default.github.branch_create",
+  "tool.default.github.git_push",
+  "tool.default.github.pull_request_open",
+  "tool.default.github.pull_request_merge",
+  "tool.default.github.comment",
+  "tool.default.github.issue_create",
+  "tool.default.github.label_edit",
+  "tool.default.github.branch_delete",
+]
+all = [
+  "tool.default.github.search_code",
+  "tool.default.github.fetch_file",
+  "tool.default.github.list_commits",
+  "tool.default.github.list_pull_requests",
+  "tool.default.github.list_issues",
+  "tool.default.github.prepare_checkout",
+  "tool.default.github.git_stage",
+  "tool.default.github.git_commit",
+  "tool.default.github.branch_create",
+  "tool.default.github.git_push",
+  "tool.default.github.pull_request_open",
+  "tool.default.github.pull_request_merge",
+  "tool.default.github.comment",
+  "tool.default.github.issue_create",
+  "tool.default.github.label_edit",
+  "tool.default.github.branch_delete",
+]
+
+[[setup_checks]]
+id = "setup.default.github.ready"
+display_name = "GitHub tools ready"
+output_schema = "schema.default.github.setup_details"
+required_capabilities = ["cap.default.github.read"]
+
+[[ui_forms]]
+id = "github_setup"
+display_name = "GitHub setup"
+schema = "schema.default.github.setup_form"
+
+[[ui_forms]]
+id = "github_grant"
+display_name = "GitHub grant"
+schema = "schema.default.github.grant_form"
+
+[[capabilities]]
+id = "cap.default.github.read"
+mode = "read"
+description = "Read scoped GitHub code search, file contents, commits, pull requests, issues, and checkout preparation."
+
+[[capabilities]]
+id = "cap.default.github.write"
+mode = "send"
+description = "Author explicitly approved GitHub changes through host-side git and gh operations."

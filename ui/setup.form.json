@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.setup_form",
+  "title": "GitHub Setup",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "auth_mode",
+    "fake_mode"
+  ],
+  "properties": {
+    "auth_mode": {
+      "type": "string",
+      "title": "Authentication mode",
+      "enum": [
+        "host",
+        "token"
+      ],
+      "default": "host"
+    },
+    "credential_ref": {
+      "type": "string",
+      "title": "Credential reference",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "fake_mode": {
+      "type": "boolean",
+      "title": "Use fake readiness data",
+      "default": true
+    }
+  },
+  "x-otto-form": {
+    "id": "github_setup",
+    "sections": [
+      {
+        "id": "auth",
+        "fields": [
+          "auth_mode",
+          "credential_ref"
+        ]
+      },
+      {
+        "id": "readiness",
+        "fields": [
+          "fake_mode"
+        ]
+      }
+    ]
+  }
+}

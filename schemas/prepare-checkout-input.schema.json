@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.prepare_checkout_input",
+  "title": "Prepare GitHub Checkout Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "#/$defs/repository"
+    },
+    "ref": {
+      "type": "string",
+      "default": "HEAD",
+      "minLength": 1,
+      "maxLength": 255
+    }
+  },
+  "$defs": {
+    "repository": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    }
+  }
+}

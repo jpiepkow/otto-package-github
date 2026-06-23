@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.branch_create_input",
+  "title": "Create Git Branch Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "branch"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "grant-scope.schema.json#/$defs/repository"
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "from_ref": {
+      "type": "string",
+      "default": "HEAD",
+      "minLength": 1,
+      "maxLength": 255
+    }
+  }
+}

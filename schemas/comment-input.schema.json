@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema.default.github.comment_input",
+  "title": "GitHub Comment Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "issue_or_pr_number",
+    "body"
+  ],
+  "properties": {
+    "repo": {
+      "$ref": "grant-scope.schema.json#/$defs/repository"
+    },
+    "issue_or_pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536
+    }
+  }
+}
