@@ -5,16 +5,45 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "mode",
-    "auth_mode",
-    "allowed_repos",
-    "allowed_refs",
-    "max_file_lines",
-    "max_file_bytes",
-    "max_matches",
-    "max_results",
-    "context_lines",
-    "max_clone_bytes"
+    "mode"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "unrestricted": {
+            "const": true
+          }
+        },
+        "required": [
+          "unrestricted"
+        ]
+      },
+      "then": {},
+      "else": {
+        "required": [
+          "allowed_repos",
+          "allowed_refs"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "auth_mode": {
+            "const": "token"
+          }
+        },
+        "required": [
+          "auth_mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "credential_ref"
+        ]
+      }
+    }
   ],
   "properties": {
     "mode": {
@@ -31,6 +60,10 @@
         "token"
       ],
       "default": "host"
+    },
+    "unrestricted": {
+      "type": "boolean",
+      "default": false
     },
     "credential_ref": {
       "type": "string",

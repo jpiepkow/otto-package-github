@@ -5,15 +5,45 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "mode",
-    "auth_mode",
-    "allowed_repos",
-    "allowed_refs",
-    "max_file_lines",
-    "max_file_bytes",
-    "max_matches",
-    "context_lines",
-    "max_clone_bytes"
+    "mode"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "unrestricted": {
+            "const": true
+          }
+        },
+        "required": [
+          "unrestricted"
+        ]
+      },
+      "then": {},
+      "else": {
+        "required": [
+          "allowed_repos",
+          "allowed_refs"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "auth_mode": {
+            "const": "token"
+          }
+        },
+        "required": [
+          "auth_mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "credential_ref"
+        ]
+      }
+    }
   ],
   "properties": {
     "mode": {
@@ -33,6 +63,11 @@
         "token"
       ],
       "default": "host"
+    },
+    "unrestricted": {
+      "type": "boolean",
+      "title": "Unrestricted repositories",
+      "default": false
     },
     "credential_ref": {
       "type": "string",
@@ -83,6 +118,13 @@
       "maximum": 100,
       "default": 20
     },
+    "max_results": {
+      "type": "integer",
+      "title": "Maximum results",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 30
+    },
     "context_lines": {
       "type": "integer",
       "title": "Search context lines",
@@ -106,6 +148,7 @@
         "fields": [
           "mode",
           "auth_mode",
+          "unrestricted",
           "credential_ref",
           "allowed_repos",
           "allowed_refs"
@@ -117,6 +160,7 @@
           "max_file_lines",
           "max_file_bytes",
           "max_matches",
+          "max_results",
           "context_lines",
           "max_clone_bytes"
         ]

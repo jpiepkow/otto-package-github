@@ -94,29 +94,22 @@ async fn live_runtime_real_mode_setup_check_and_read_tool() -> anyhow::Result<()
         Some(invoke_params(
             TOOL_LIST_ISSUES,
             CapabilityMode::Read,
-            json!({
-                "mode": "read",
-                "auth_mode": "host",
-                "allowed_repos": ["octocat/Hello-World"],
-                "allowed_refs": ["main", "master"],
-                "max_file_lines": 120,
-                "max_file_bytes": 32768,
-                "max_matches": 20,
-                "max_results": 5,
-                "context_lines": 3,
-                "max_clone_bytes": 524288000
-            }),
+            unrestricted_read_package_scope(),
             json!({
                 "repo": "octocat/Hello-World",
                 "state": "open",
-                "limit": 1
+                "max_results": 1
             }),
         )),
     )
     .await?;
 
-    assert_eq!(response["result"]["status"], "ok");
-    assert_eq!(response["result"]["output"]["tool"], TOOL_LIST_ISSUES);
+    assert_eq!(response["result"]["status"], "ok", "{response}");
+    assert_eq!(response["result"]["output"]["status"], "ok", "{response}");
+    assert_eq!(
+        response["result"]["output"]["output"]["repo"],
+        "octocat/Hello-World"
+    );
     shutdown(process).await
 }
 
@@ -402,6 +395,18 @@ fn read_package_scope() -> Value {
         "max_results": 30,
         "context_lines": 3,
         "max_clone_bytes": 524288000
+    })
+}
+
+fn unrestricted_read_package_scope() -> Value {
+    json!({
+        "mode": "read",
+        "auth_mode": "host",
+        "unrestricted": true,
+        "max_results": 5,
+        "runtime_commands": ["gh", "git"],
+        "connection_scope": { "unrestricted": true },
+        "grant_scope": {}
     })
 }
 

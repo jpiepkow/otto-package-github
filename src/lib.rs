@@ -1352,11 +1352,14 @@ pub fn validate_write_scope(params: &ToolInvokeParams) -> ToolRuntimeResult<Pack
 }
 
 fn decode_scope(params: &ToolInvokeParams) -> ToolRuntimeResult<PackageScope> {
-    serde_json::from_value::<PackageScope>(params.package_scope.clone()).map_err(|_| {
-        ToolRuntimeError::Validation {
-            reason: "GitHub package scope is invalid".to_owned(),
-        }
-    })
+    let mut scope =
+        serde_json::from_value::<PackageScope>(params.package_scope.clone()).map_err(|_| {
+            ToolRuntimeError::Validation {
+                reason: "GitHub package scope is invalid".to_owned(),
+            }
+        })?;
+    scope.apply_default_bounds();
+    Ok(scope)
 }
 
 fn validate_common_scope(scope: &PackageScope) -> ToolRuntimeResult<()> {
@@ -1370,12 +1373,12 @@ fn validate_common_scope(scope: &PackageScope) -> ToolRuntimeResult<()> {
             reason: "GitHub token auth requires credential_ref".to_owned(),
         });
     }
-    if scope.allowed_repos.is_empty() {
+    if !scope.unrestricted && scope.allowed_repos.is_empty() {
         return Err(ToolRuntimeError::Validation {
             reason: "GitHub package scope requires at least one repository".to_owned(),
         });
     }
-    if scope.allowed_refs.is_empty() {
+    if !scope.unrestricted && scope.allowed_refs.is_empty() {
         return Err(ToolRuntimeError::Validation {
             reason: "GitHub package scope requires at least one ref".to_owned(),
         });
@@ -1394,7 +1397,9 @@ fn validate_common_scope(scope: &PackageScope) -> ToolRuntimeResult<()> {
 }
 
 pub fn validate_repo_allowed(repo: &str, scope: &PackageScope) -> ToolRuntimeResult<()> {
-    if !scope.allowed_repos.is_empty() && !scope.allowed_repos.iter().any(|allowed| allowed == repo)
+    if !scope.unrestricted
+        && !scope.allowed_repos.is_empty()
+        && !scope.allowed_repos.iter().any(|allowed| allowed == repo)
     {
         return Err(ToolRuntimeError::Validation {
             reason: format!("GitHub repository {repo} is outside package scope"),
@@ -1404,10 +1409,11 @@ pub fn validate_repo_allowed(repo: &str, scope: &PackageScope) -> ToolRuntimeRes
 }
 
 fn validate_ref_allowed(ref_name: &str, scope: &PackageScope) -> ToolRuntimeResult<()> {
-    if scope
-        .allowed_refs
-        .iter()
-        .any(|allowed| allowed == ref_name || allowed == "*")
+    if scope.unrestricted
+        || scope
+            .allowed_refs
+            .iter()
+            .any(|allowed| allowed == ref_name || allowed == "*")
     {
         return Ok(());
     }
@@ -1857,8 +1863,14 @@ fn ui_form_id(value: &str) -> UiFormId {
     UiFormId::new(value).expect("valid UI form id")
 }
 
+const DEFAULT_MAX_FILE_LINES: usize = 120;
+const DEFAULT_MAX_FILE_BYTES: usize = 32_768;
+const DEFAULT_MAX_MATCHES: usize = 20;
+const DEFAULT_MAX_RESULTS: usize = 30;
+const DEFAULT_CONTEXT_LINES: usize = 3;
+const DEFAULT_MAX_CLONE_BYTES: usize = 524_288_000;
+
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct PackageScope {
     #[serde(default)]
     pub mode: String,
@@ -1866,6 +1878,8 @@ pub struct PackageScope {
     pub auth_mode: String,
     #[serde(default)]
     pub credential_ref: Option<String>,
+    #[serde(default)]
+    pub unrestricted: bool,
     #[serde(default)]
     pub allowed_repos: Vec<String>,
     #[serde(default)]
@@ -1882,10 +1896,35 @@ pub struct PackageScope {
     pub context_lines: usize,
     #[serde(default)]
     pub max_clone_bytes: usize,
+    #[serde(default, flatten)]
+    _extra: Map<String, Value>,
 }
 
 fn default_auth_mode() -> String {
     "host".to_owned()
+}
+
+impl PackageScope {
+    fn apply_default_bounds(&mut self) {
+        if self.max_file_lines == 0 {
+            self.max_file_lines = DEFAULT_MAX_FILE_LINES;
+        }
+        if self.max_file_bytes == 0 {
+            self.max_file_bytes = DEFAULT_MAX_FILE_BYTES;
+        }
+        if self.max_matches == 0 {
+            self.max_matches = DEFAULT_MAX_MATCHES;
+        }
+        if self.max_results == 0 {
+            self.max_results = DEFAULT_MAX_RESULTS;
+        }
+        if self.context_lines == 0 {
+            self.context_lines = DEFAULT_CONTEXT_LINES;
+        }
+        if self.max_clone_bytes == 0 {
+            self.max_clone_bytes = DEFAULT_MAX_CLONE_BYTES;
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -2552,6 +2591,90 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn partial_scope_defaults_are_normalized() {
+        let mut params = invoke_params(TOOL_LIST_ISSUES, json!({ "repo": "owner/repo" }));
+        params.package_scope = json!({
+            "mode": "read",
+            "auth_mode": "host",
+            "allowed_repos": ["owner/repo"],
+            "allowed_refs": ["main"],
+            "max_results": 12
+        });
+
+        let scope = validate_read_scope(&params).expect("partial scope defaults are valid");
+
+        assert_eq!(scope.max_results, 12);
+        assert_eq!(scope.max_file_lines, DEFAULT_MAX_FILE_LINES);
+        assert_eq!(scope.max_file_bytes, DEFAULT_MAX_FILE_BYTES);
+        assert_eq!(scope.max_matches, DEFAULT_MAX_MATCHES);
+        assert_eq!(scope.context_lines, DEFAULT_CONTEXT_LINES);
+        assert_eq!(scope.max_clone_bytes, DEFAULT_MAX_CLONE_BYTES);
+    }
+
+    #[test]
+    fn unrestricted_scope_accepts_bridge_metadata_and_allows_any_repo_ref() {
+        let mut params = invoke_params(
+            TOOL_FETCH_FILE,
+            json!({
+                "repo": "other-owner/other-repo",
+                "path": "README.md",
+                "ref": "feature/e2e"
+            }),
+        );
+        params.package_scope = json!({
+            "mode": "read",
+            "auth_mode": "host",
+            "unrestricted": true,
+            "connection_id": "019f0000-0000-7000-8000-000000000000",
+            "connection_alias_prefix": "github",
+            "tool_alias": "github.fetch_file",
+            "runtime_commands": ["gh", "git"],
+            "connection_scope": { "unrestricted": true },
+            "grant_scope": {}
+        });
+
+        let scope = validate_read_scope(&params).expect("unrestricted scope is valid");
+
+        validate_repo_allowed("other-owner/other-repo", &scope).expect("any repo is allowed");
+        validate_ref_allowed("feature/e2e", &scope).expect("any ref is allowed");
+    }
+
+    #[test]
+    fn scoped_scope_still_requires_allowlists() {
+        let mut params = invoke_params(TOOL_LIST_ISSUES, json!({ "repo": "owner/repo" }));
+        params.package_scope = json!({
+            "mode": "read",
+            "auth_mode": "host"
+        });
+
+        let error = validate_read_scope(&params).expect_err("scoped grants require allowlists");
+
+        assert_eq!(error.code(), "validation_error");
+    }
+
+    #[test]
+    fn unrestricted_write_scope_accepts_send_mode_without_allowlists() {
+        let mut params = write_invoke_params(
+            TOOL_BRANCH_CREATE,
+            json!({
+                "repo": "other-owner/other-repo",
+                "branch": "phase25-e2e"
+            }),
+        );
+        params.package_scope = json!({
+            "mode": "send",
+            "auth_mode": "host",
+            "unrestricted": true,
+            "connection_scope": { "unrestricted": true },
+            "grant_scope": {}
+        });
+
+        let scope = validate_write_scope(&params).expect("unrestricted send scope is valid");
+
+        validate_repo_allowed("other-owner/other-repo", &scope).expect("any repo is allowed");
     }
 
     #[tokio::test]
