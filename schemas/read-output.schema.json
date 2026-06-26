@@ -55,7 +55,7 @@
           "minimum": 0
         },
         "repo": {
-          "$ref": "grant-scope.schema.json#/$defs/repository"
+          "$ref": "#/$defs/repository"
         },
         "path": {
           "type": "string",
@@ -76,6 +76,14 @@
           ]
         }
       }
+    }
+  },
+  "$defs": {
+    "repository": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
     }
   }
 }

@@ -10,7 +10,7 @@
   ],
   "properties": {
     "repo": {
-      "$ref": "grant-scope.schema.json#/$defs/repository"
+      "$ref": "#/$defs/repository"
     },
     "number": {
       "type": "integer",
@@ -24,6 +24,14 @@
         "rebase"
       ],
       "default": "merge"
+    }
+  },
+  "$defs": {
+    "repository": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
     }
   }
 }

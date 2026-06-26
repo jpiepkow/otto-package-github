@@ -11,7 +11,7 @@
   ],
   "properties": {
     "repo": {
-      "$ref": "grant-scope.schema.json#/$defs/repository"
+      "$ref": "#/$defs/repository"
     },
     "issue_or_pr_number": {
       "type": "integer",
@@ -21,6 +21,14 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 65536
+    }
+  },
+  "$defs": {
+    "repository": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
     }
   }
 }
