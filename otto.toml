@@ -11,7 +11,7 @@ redaction = []
 command = "bin/otto-tool-github"
 args = []
 idle_timeout_ms = 30000
-health_timeout_ms = 2000
+health_timeout_ms = 30000
 
 [build]
 command = "cargo build --release && mkdir -p bin && cp target/release/otto-tool-github bin/otto-tool-github"
