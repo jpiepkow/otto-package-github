@@ -1358,6 +1358,7 @@ fn decode_scope(params: &ToolInvokeParams) -> ToolRuntimeResult<PackageScope> {
                 reason: "GitHub package scope is invalid".to_owned(),
             }
         })?;
+    scope.apply_connection_scope();
     scope.apply_default_bounds();
     Ok(scope)
 }
@@ -1881,6 +1882,8 @@ pub struct PackageScope {
     #[serde(default)]
     pub unrestricted: bool,
     #[serde(default)]
+    connection_scope: Option<ConnectionScope>,
+    #[serde(default)]
     pub allowed_repos: Vec<String>,
     #[serde(default)]
     pub allowed_refs: Vec<String>,
@@ -1900,11 +1903,28 @@ pub struct PackageScope {
     _extra: Map<String, Value>,
 }
 
+#[derive(Debug, Deserialize)]
+struct ConnectionScope {
+    #[serde(default)]
+    unrestricted: bool,
+}
+
 fn default_auth_mode() -> String {
     "host".to_owned()
 }
 
 impl PackageScope {
+    fn apply_connection_scope(&mut self) {
+        if !self.unrestricted
+            && self
+                .connection_scope
+                .as_ref()
+                .is_some_and(|scope| scope.unrestricted)
+        {
+            self.unrestricted = true;
+        }
+    }
+
     fn apply_default_bounds(&mut self) {
         if self.max_file_lines == 0 {
             self.max_file_lines = DEFAULT_MAX_FILE_LINES;
@@ -2640,6 +2660,34 @@ mod tests {
 
         validate_repo_allowed("other-owner/other-repo", &scope).expect("any repo is allowed");
         validate_ref_allowed("feature/e2e", &scope).expect("any ref is allowed");
+    }
+
+    #[test]
+    fn nested_unrestricted_connection_scope_allows_run_grant_shape() {
+        let mut params = invoke_params(
+            TOOL_FETCH_FILE,
+            json!({
+                "repo": "jpiepkow/otto-github-e2e",
+                "path": "README.md",
+                "ref": "main"
+            }),
+        );
+        params.package_scope = json!({
+            "mode": "read",
+            "auth_mode": "host",
+            "fake_mode": true,
+            "connection_id": "019f094a-210c-7ff2-b0d4-716889c2ba03",
+            "connection_alias_prefix": "e2e_test",
+            "tool_alias": "com.otto.github:019f094a-210c-7ff2-b0d4-716889c2ba03:tool.default.github.fetch_file",
+            "connection_scope": { "unrestricted": true },
+            "grant_scope": {}
+        });
+
+        let scope = validate_read_scope(&params).expect("nested unrestricted scope is valid");
+
+        validate_repo_allowed("jpiepkow/otto-github-e2e", &scope)
+            .expect("nested unrestricted allows repo");
+        validate_ref_allowed("main", &scope).expect("nested unrestricted allows ref");
     }
 
     #[test]

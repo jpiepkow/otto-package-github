@@ -402,7 +402,6 @@ fn unrestricted_read_package_scope() -> Value {
     json!({
         "mode": "read",
         "auth_mode": "host",
-        "unrestricted": true,
         "max_results": 5,
         "runtime_commands": ["gh", "git"],
         "connection_scope": { "unrestricted": true },
