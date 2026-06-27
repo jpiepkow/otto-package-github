@@ -19,6 +19,12 @@ fn github_package_manifest_runs_real_runtime_by_default() {
     let runtime = manifest["runtime"].as_table().expect("runtime section");
     assert_eq!(runtime["command"].as_str(), Some("bin/otto-tool-github"));
     assert_eq!(runtime["args"].as_array().map(Vec::len), Some(0));
+    assert!(
+        runtime["health_timeout_ms"]
+            .as_integer()
+            .is_some_and(|timeout| timeout >= 30_000),
+        "GitHub checkout operations need more than the default 2s RPC timeout"
+    );
 
     let provides = manifest["provides"].as_table().expect("provides section");
     assert_eq!(provides["tools"]["version"].as_integer(), Some(1));
