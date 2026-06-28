@@ -54,13 +54,13 @@ The worker receives the checkout as a read-write bind mount. The agent reads and
 
 ## Install In Otto
 
-Install from the Packages screen with:
+The canonical package repository is:
 
 ```text
 https://github.com/jpiepkow/otto-package-github
 ```
 
-This package pins `otto-extension-sdk` to the core repo tag `sdk-v0.1.5`, which includes the run-context fields needed by `prepare_checkout`.
+During Phase 25, development lives in `extensions/com.otto.github/`; extraction to the separate package repository is a follow-up packaging step through the Phase 58 GitHub package install path.
 
 ## Build
 
@@ -75,11 +75,11 @@ cp target/release/otto-tool-github bin/otto-tool-github
 Default tests are offline and deterministic:
 
 ```sh
-cargo test
+cargo test --manifest-path extensions/com.otto.github/Cargo.toml
 ```
 
 Live smoke tests are opt-in and require authenticated `gh`:
 
 ```sh
-cargo test --test runtime_contract -- --ignored live
+cargo test --manifest-path extensions/com.otto.github/Cargo.toml --test runtime_contract -- --ignored live
 ```

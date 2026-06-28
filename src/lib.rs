@@ -10,7 +10,7 @@ use otto_extension_sdk::extension_ids::{
     CapabilityId, RoleId, SchemaId, SetupCheckId, ToolId, UiFormId,
 };
 use otto_extension_sdk::grants::CapabilityMode;
-use otto_extension_sdk::protocol::{ToolInvokeParams, ToolInvokeResult};
+use otto_extension_sdk::protocol::{ContentBlock, ToolInvokeParams, ToolInvokeResult};
 use otto_extension_sdk::roles::{
     CapabilityDeclaration, ExtensionRegistrations, ExtensionRoleKind, RoleRegistration,
     SchemaRegistration, SetupCheckRegistration, ToolRegistration, UiFormRegistration,
@@ -74,6 +74,35 @@ pub const UI_SETUP: &str = "github_setup";
 pub const UI_GRANT: &str = "github_grant";
 const CHECKOUT_MOUNT_ROOT: &str = "/otto/checkout";
 const CHECKOUT_FILE_SOFT_CAP: usize = 100_000;
+
+#[derive(Debug, Clone, Copy)]
+struct ToolAnnotations {
+    read_only: bool,
+    destructive: bool,
+    idempotent: bool,
+    open_world: bool,
+}
+
+const READ_GITHUB_API_ANNOTATIONS: ToolAnnotations = ToolAnnotations {
+    read_only: true,
+    destructive: false,
+    idempotent: false,
+    open_world: true,
+};
+
+const LOCAL_GIT_WRITE_ANNOTATIONS: ToolAnnotations = ToolAnnotations {
+    read_only: false,
+    destructive: true,
+    idempotent: false,
+    open_world: false,
+};
+
+const REMOTE_GITHUB_WRITE_ANNOTATIONS: ToolAnnotations = ToolAnnotations {
+    read_only: false,
+    destructive: true,
+    idempotent: false,
+    open_world: true,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ToolRuntimeError {
@@ -250,7 +279,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_SEARCH_CODE_INPUT,
                 Some(SCHEMA_READ_OUTPUT),
                 read_capability.clone(),
-                false,
+                READ_GITHUB_API_ANNOTATIONS,
                 Some(json!({"max_matches": 20, "context_lines": 3, "max_file_bytes": 32768})),
             ),
             github_tool(
@@ -260,7 +289,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_FETCH_FILE_INPUT,
                 Some(SCHEMA_READ_OUTPUT),
                 read_capability.clone(),
-                false,
+                READ_GITHUB_API_ANNOTATIONS,
                 Some(json!({"max_lines": 120, "max_bytes": 32768})),
             ),
             github_tool(
@@ -270,7 +299,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_LIST_COMMITS_INPUT,
                 Some(SCHEMA_READ_OUTPUT),
                 read_capability.clone(),
-                false,
+                READ_GITHUB_API_ANNOTATIONS,
                 Some(json!({"max_results": 30})),
             ),
             github_tool(
@@ -280,7 +309,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_LIST_PULL_REQUESTS_INPUT,
                 Some(SCHEMA_READ_OUTPUT),
                 read_capability.clone(),
-                false,
+                READ_GITHUB_API_ANNOTATIONS,
                 Some(json!({"max_results": 30})),
             ),
             github_tool(
@@ -290,7 +319,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_LIST_ISSUES_INPUT,
                 Some(SCHEMA_READ_OUTPUT),
                 read_capability.clone(),
-                false,
+                READ_GITHUB_API_ANNOTATIONS,
                 Some(json!({"max_results": 30})),
             ),
             github_tool(
@@ -300,7 +329,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_PREPARE_CHECKOUT_INPUT,
                 Some(SCHEMA_PREPARE_CHECKOUT_OUTPUT),
                 read_capability.clone(),
-                false,
+                READ_GITHUB_API_ANNOTATIONS,
                 Some(json!({"max_clone_bytes": 524288000})),
             ),
             github_tool(
@@ -310,7 +339,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_GIT_STAGE_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                LOCAL_GIT_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -320,7 +349,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_GIT_COMMIT_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                LOCAL_GIT_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -330,7 +359,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_BRANCH_CREATE_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                LOCAL_GIT_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -340,7 +369,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_GIT_PUSH_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                REMOTE_GITHUB_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -350,7 +379,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_PULL_REQUEST_OPEN_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                REMOTE_GITHUB_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -360,7 +389,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_PULL_REQUEST_MERGE_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                REMOTE_GITHUB_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -370,7 +399,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_COMMENT_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                REMOTE_GITHUB_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -380,7 +409,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_ISSUE_CREATE_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                REMOTE_GITHUB_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -390,7 +419,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_LABEL_EDIT_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                REMOTE_GITHUB_WRITE_ANNOTATIONS,
                 None,
             ),
             github_tool(
@@ -400,7 +429,7 @@ pub fn registrations() -> ExtensionRegistrations {
                 SCHEMA_BRANCH_DELETE_INPUT,
                 Some(SCHEMA_WRITE_OUTPUT),
                 write_capability.clone(),
-                true,
+                REMOTE_GITHUB_WRITE_ANNOTATIONS,
                 None,
             ),
         ],
@@ -505,7 +534,10 @@ pub async fn invoke_tool_with_gh<G>(
 where
     G: GhCommand,
 {
-    invoke_tool_with_gh_inner(gh, params, token, None).await
+    match invoke_tool_with_gh_inner(gh, params, token, None).await {
+        Ok(result) => Ok(result),
+        Err(error) => Ok(error_result(&error.to_string())),
+    }
 }
 
 async fn invoke_tool_with_gh_inner<G>(
@@ -947,10 +979,9 @@ where
         args.repo, args.ref_name, mount_path, stats.file_count
     );
 
-    Ok(ToolInvokeResult {
-        status: "ok".to_owned(),
-        summary: summary.clone(),
-        output: json!({
+    Ok(ok_result(
+        &summary,
+        json!({
             "status": "ok",
             "summary": summary,
             "output": {
@@ -965,7 +996,7 @@ where
                 "truncated": truncated
             }
         }),
-    })
+    ))
 }
 
 async fn invoke_git_stage<G>(
@@ -1733,9 +1764,31 @@ fn bounded_list_lines(
 
 fn ok_result(summary: &str, output: Value) -> ToolInvokeResult {
     ToolInvokeResult {
-        status: "ok".to_owned(),
-        summary: summary.to_owned(),
-        output,
+        content: vec![ContentBlock::Text {
+            text: summary.to_owned(),
+            annotations: None,
+            _meta: None,
+        }],
+        structured_content: Some(output),
+        output_schema: None,
+        is_error: false,
+        idempotency_key: None,
+        _meta: None,
+    }
+}
+
+fn error_result(text: &str) -> ToolInvokeResult {
+    ToolInvokeResult {
+        content: vec![ContentBlock::Text {
+            text: text.to_owned(),
+            annotations: None,
+            _meta: None,
+        }],
+        structured_content: None,
+        output_schema: None,
+        is_error: true,
+        idempotency_key: None,
+        _meta: None,
     }
 }
 
@@ -1824,7 +1877,7 @@ fn github_tool(
     input_schema: &str,
     output_schema: Option<&str>,
     capability: CapabilityId,
-    requires_approval: bool,
+    annotations: ToolAnnotations,
     scope_defaults: Option<Value>,
 ) -> ToolRegistration {
     ToolRegistration {
@@ -1834,7 +1887,11 @@ fn github_tool(
         input_schema: schema_id(input_schema),
         output_schema: output_schema.map(schema_id),
         required_capabilities: vec![capability],
-        requires_approval: Some(requires_approval),
+        requires_approval: Some(annotations.destructive),
+        read_only: annotations.read_only,
+        destructive: annotations.destructive,
+        idempotent: annotations.idempotent,
+        open_world: annotations.open_world,
         runtime_commands: vec!["gh".to_owned(), "git".to_owned()],
         scope_defaults,
     }
@@ -2131,6 +2188,25 @@ mod tests {
     use otto_extension_sdk::protocol::ToolInvokeParams;
     use serde_json::{Value, json};
 
+    fn structured_content(result: &ToolInvokeResult) -> &Value {
+        result
+            .structured_content
+            .as_ref()
+            .expect("structured content")
+    }
+
+    fn text_content(result: &ToolInvokeResult) -> String {
+        result
+            .content
+            .iter()
+            .filter_map(|block| match block {
+                ContentBlock::Text { text, .. } => Some(text.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
     #[tokio::test]
     async fn fetch_file_decodes_and_caps_large_file_output() {
         let gh = FakeGhCommand::default();
@@ -2165,9 +2241,9 @@ mod tests {
         .await
         .expect("fetch_file succeeds");
 
-        assert_eq!(result.output["output"]["truncated"], true);
-        assert_eq!(result.output["output"]["total_lines"], 300);
-        let lines = result.output["output"]["lines"]
+        assert_eq!(structured_content(&result)["output"]["truncated"], true);
+        assert_eq!(structured_content(&result)["output"]["total_lines"], 300);
+        let lines = structured_content(&result)["output"]["lines"]
             .as_array()
             .expect("lines array");
         assert_eq!(lines.len(), 121);
@@ -2213,9 +2289,9 @@ mod tests {
         .await
         .expect("search_code succeeds");
 
-        assert_eq!(result.output["output"]["match_count"], 20);
-        assert_eq!(result.output["output"]["remainder"], 5);
-        let lines = result.output["output"]["lines"]
+        assert_eq!(structured_content(&result)["output"]["match_count"], 20);
+        assert_eq!(structured_content(&result)["output"]["remainder"], 5);
+        let lines = structured_content(&result)["output"]["lines"]
             .as_array()
             .expect("lines array");
         assert!(lines.iter().any(|line| {
@@ -2263,8 +2339,8 @@ mod tests {
         .await
         .expect("list_commits succeeds");
 
-        assert_eq!(result.output["output"]["truncated"], true);
-        let lines = result.output["output"]["lines"]
+        assert_eq!(structured_content(&result)["output"]["truncated"], true);
+        let lines = structured_content(&result)["output"]["lines"]
             .as_array()
             .expect("lines array");
         let rendered_rows = lines
@@ -2320,7 +2396,7 @@ mod tests {
         .await
         .expect("list_pull_requests succeeds");
 
-        let lines = result.output["output"]["lines"]
+        let lines = structured_content(&result)["output"]["lines"]
             .as_array()
             .expect("lines array");
         assert!(lines.iter().any(|line| {
@@ -2372,7 +2448,7 @@ mod tests {
         .await
         .expect("list_issues succeeds");
 
-        let lines = result.output["output"]["lines"]
+        let lines = structured_content(&result)["output"]["lines"]
             .as_array()
             .expect("lines array");
         assert!(lines.iter().any(|line| {
@@ -2406,13 +2482,13 @@ mod tests {
         .await
         .expect("prepare_checkout succeeds");
 
-        assert_eq!(result.output["status"], "ok");
+        assert_eq!(structured_content(&result)["status"], "ok");
         assert_eq!(
-            result.output["output"]["mount_path"],
+            structured_content(&result)["output"]["mount_path"],
             "/otto/checkout/owner/repo"
         );
         assert!(
-            result.output["output"]["commit_sha"]
+            structured_content(&result)["output"]["commit_sha"]
                 .as_str()
                 .is_some_and(|sha| !sha.is_empty())
         );
@@ -2461,7 +2537,7 @@ mod tests {
             .expect("git_commit succeeds");
 
         assert_eq!(
-            result.output["output"]["commit_sha"],
+            structured_content(&result)["output"]["commit_sha"],
             "0123456789abcdef0123456789abcdef01234567"
         );
         assert!(
@@ -2491,7 +2567,7 @@ mod tests {
             .await
             .expect("git_push succeeds");
 
-        assert_eq!(result.status, "ok");
+        assert!(!result.is_error);
         let invocations = gh.invocations();
         let push = invocations
             .iter()
@@ -2537,10 +2613,11 @@ mod tests {
         ];
 
         for (tool_id, arguments) in cases {
-            let error = invoke_tool_with_gh(&gh, &invoke_params(tool_id, arguments), None)
+            let result = invoke_tool_with_gh(&gh, &invoke_params(tool_id, arguments), None)
                 .await
-                .expect_err("read grant rejects write tool");
-            assert_eq!(error.code(), "validation_error");
+                .expect("read grant returns tool error");
+            assert!(result.is_error);
+            assert!(text_content(&result).contains("GitHub write tools require send mode"));
         }
     }
 
@@ -2573,9 +2650,9 @@ mod tests {
         .await
         .expect("pull_request_open succeeds");
 
-        assert_eq!(result.output["output"]["number"], 42);
+        assert_eq!(structured_content(&result)["output"]["number"], 42);
         assert_eq!(
-            result.output["output"]["html_url"],
+            structured_content(&result)["output"]["html_url"],
             "https://github.com/owner/repo/pull/42"
         );
         assert!(
@@ -2603,7 +2680,7 @@ mod tests {
         .await
         .expect("branch_delete succeeds");
 
-        assert_eq!(result.status, "ok");
+        assert!(!result.is_error);
         assert_eq!(
             gh.invocations()
                 .iter()
@@ -2778,10 +2855,11 @@ mod tests {
         ];
 
         for (tool_id, arguments) in cases {
-            let error = invoke_tool_with_gh(&gh, &invoke_params(tool_id, arguments), None)
+            let result = invoke_tool_with_gh(&gh, &invoke_params(tool_id, arguments), None)
                 .await
-                .expect_err("read grant rejects remote write tool");
-            assert_eq!(error.code(), "validation_error");
+                .expect("read grant returns tool error");
+            assert!(result.is_error);
+            assert!(text_content(&result).contains("GitHub write tools require send mode"));
         }
     }
 

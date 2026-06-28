@@ -104,10 +104,13 @@ async fn live_runtime_real_mode_setup_check_and_read_tool() -> anyhow::Result<()
     )
     .await?;
 
-    assert_eq!(response["result"]["status"], "ok", "{response}");
-    assert_eq!(response["result"]["output"]["status"], "ok", "{response}");
+    assert_eq!(response["result"]["is_error"], false, "{response}");
     assert_eq!(
-        response["result"]["output"]["output"]["repo"],
+        response["result"]["structured_content"]["status"], "ok",
+        "{response}"
+    );
+    assert_eq!(
+        response["result"]["structured_content"]["output"]["repo"],
         "octocat/Hello-World"
     );
     shutdown(process).await
@@ -279,6 +282,9 @@ fn assert_read_tools_no_approval(registrations: &Value) {
             .find(|tool| tool["id"] == tool_id)
             .expect("read tool registration");
         assert_eq!(tool["requires_approval"], false, "{tool_id}");
+        assert_eq!(tool["read_only"], true, "{tool_id}");
+        assert_eq!(tool["destructive"], false, "{tool_id}");
+        assert_eq!(tool["open_world"], true, "{tool_id}");
         assert_eq!(tool["required_capabilities"], json!([CAPABILITY_READ]));
     }
 }
@@ -292,6 +298,18 @@ fn assert_write_tools_require_approval(registrations: &Value) {
             .find(|tool| tool["id"] == tool_id)
             .expect("write tool registration");
         assert_eq!(tool["requires_approval"], true, "{tool_id}");
+        assert_eq!(tool["read_only"], false, "{tool_id}");
+        assert_eq!(tool["destructive"], true, "{tool_id}");
+        assert_eq!(
+            tool["open_world"],
+            !matches!(
+                tool_id,
+                "tool.default.github.git_stage"
+                    | "tool.default.github.git_commit"
+                    | "tool.default.github.branch_create"
+            ),
+            "{tool_id}"
+        );
         assert_eq!(tool["required_capabilities"], json!([CAPABILITY_WRITE]));
     }
 }
@@ -331,7 +349,19 @@ async fn assert_each_write_tool_rejects_read_grant(
             )),
         )
         .await?;
-        assert_eq!(response["error"]["message"], "validation_error");
+        assert_eq!(response["error"], Value::Null, "{response}");
+        assert_eq!(response["result"]["is_error"], true, "{response}");
+        assert_eq!(
+            response["result"]["structured_content"],
+            Value::Null,
+            "{response}"
+        );
+        assert!(
+            response["result"]["content"][0]["text"]
+                .as_str()
+                .is_some_and(|text| text.contains("GitHub write tools require send mode")),
+            "{response}"
+        );
     }
     Ok(())
 }
@@ -353,13 +383,13 @@ async fn assert_prepare_checkout_mount_path(process: &mut RuntimeProcess) -> any
         )),
     )
     .await?;
-    assert_eq!(response["result"]["status"], "ok");
+    assert_eq!(response["result"]["is_error"], false);
     assert_eq!(
-        response["result"]["output"]["output"]["mount_path"],
+        response["result"]["structured_content"]["output"]["mount_path"],
         "/otto/checkout/owner/repo"
     );
     assert!(
-        response["result"]["output"]["output"]["commit_sha"]
+        response["result"]["structured_content"]["output"]["commit_sha"]
             .as_str()
             .is_some_and(|sha| !sha.is_empty())
     );

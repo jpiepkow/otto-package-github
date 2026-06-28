@@ -57,19 +57,19 @@ The D-05 write-capability surface includes repository deletion as a theoreticall
 
 Rationale: repository deletion is irreversible at the package boundary and does not need to be exercised in fake/live smoke tests for the authoring workflow. The implemented v1 remote write set covers PR open/merge, issue/PR comments, issue creation, label edits, and branch deletion. If repo deletion is added later, it must be registered as a separate `requires_approval = true` tool with an unmistakably destructive description and a dedicated UAT path.
 
-## Package Repo
+## Repo Placement
 
-`com.otto.github` is packaged from:
+`com.otto.github` is developed in `extensions/com.otto.github/` during Phase 25 for local iteration alongside Otto core, but its canonical package home is a separate repository:
 
 ```text
 https://github.com/jpiepkow/otto-package-github
 ```
 
-Install through Otto's GitHub package install path, consistent with the Phase 59 package-decoupling model used for other first-party packages.
+The package should be installed through Otto's Phase 58 GitHub package install path, consistent with the Phase 59 package-decoupling model used for other first-party packages. Extracting the directory to `otto-package-github` is a follow-up packaging step and does not block the core Phase 25 implementation.
 
-Package invariants:
+Extraction-readiness checklist:
 
 - `otto.toml` declares the build command and runtime binary without relying on monorepo-only paths.
-- `Cargo.toml` pins `otto-extension-sdk` to an Otto repo tag that includes `ToolInvokeParams.run_id`.
+- `Cargo.toml` is switched from the local development SDK path to the published `otto-extension-sdk` git tag before extraction.
 - The extracted repository has no path dependencies on the Otto monorepo.
 - `README.md` documents install, auth modes, setup check, live smoke tests, and the read/write tool surface.
