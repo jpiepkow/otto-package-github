@@ -74,6 +74,8 @@ pub const UI_SETUP: &str = "github_setup";
 pub const UI_GRANT: &str = "github_grant";
 const CHECKOUT_MOUNT_ROOT: &str = "/otto/checkout";
 const CHECKOUT_FILE_SOFT_CAP: usize = 100_000;
+const MODEL_TEXT_MAX_LINES: usize = 40;
+const MODEL_TEXT_MAX_CHARS: usize = 12_000;
 
 #[derive(Debug, Clone, Copy)]
 struct ToolAnnotations {
@@ -1765,7 +1767,7 @@ fn bounded_list_lines(
 fn ok_result(summary: &str, output: Value) -> ToolInvokeResult {
     ToolInvokeResult {
         content: vec![ContentBlock::Text {
-            text: summary.to_owned(),
+            text: model_facing_text(summary, &output),
             annotations: None,
             _meta: None,
         }],
@@ -1775,6 +1777,80 @@ fn ok_result(summary: &str, output: Value) -> ToolInvokeResult {
         idempotency_key: None,
         _meta: None,
     }
+}
+
+fn model_facing_text(summary: &str, output: &Value) -> String {
+    let Some(output) = output.get("output").and_then(Value::as_object) else {
+        return summary.to_owned();
+    };
+
+    let mut blocks = vec![summary.to_owned()];
+    let mut details = Vec::new();
+    for key in [
+        "repo",
+        "number",
+        "issue_or_pr_number",
+        "id",
+        "name",
+        "branch",
+        "ref",
+        "from_ref",
+        "remote",
+        "refspec",
+        "commit_sha",
+        "sha",
+        "mount_path",
+        "html_url",
+    ] {
+        append_scalar_detail(&mut details, output, key);
+    }
+    if !details.is_empty() {
+        blocks.push(format!("Details: {}", details.join(", ")));
+    }
+
+    if let Some(lines) = output.get("lines").and_then(Value::as_array) {
+        let rendered = lines
+            .iter()
+            .filter_map(Value::as_str)
+            .take(MODEL_TEXT_MAX_LINES)
+            .collect::<Vec<_>>();
+        if !rendered.is_empty() {
+            blocks.push("Rows:".to_owned());
+            blocks.extend(rendered.iter().map(|line| (*line).to_owned()));
+            if lines.len() > rendered.len() {
+                blocks.push(format!(
+                    "[model-facing preview truncated: returned {} of {} rows]",
+                    rendered.len(),
+                    lines.len()
+                ));
+            }
+        }
+    }
+
+    truncate_model_text(blocks.join("\n"))
+}
+
+fn append_scalar_detail(details: &mut Vec<String>, output: &Map<String, Value>, key: &str) {
+    let Some(value) = output.get(key) else {
+        return;
+    };
+    let rendered = match value {
+        Value::String(value) if !value.is_empty() => value.clone(),
+        Value::Number(value) => value.to_string(),
+        Value::Bool(value) => value.to_string(),
+        _ => return,
+    };
+    details.push(format!("{key}={rendered}"));
+}
+
+fn truncate_model_text(text: String) -> String {
+    if text.chars().count() <= MODEL_TEXT_MAX_CHARS {
+        return text;
+    }
+
+    let mut truncated = text.chars().take(MODEL_TEXT_MAX_CHARS).collect::<String>();
+    truncated.push_str("\n[model-facing GitHub result truncated]");
+    truncated
 }
 
 fn error_result(text: &str) -> ToolInvokeResult {
@@ -2406,6 +2482,10 @@ mod tests {
                     && line.contains("@alice")
             })
         }));
+        let text = text_content(&result);
+        assert!(text.contains("Listed bounded GitHub pull requests."));
+        assert!(text.contains("#7 [open] Add checkout support"));
+        assert!(text.contains("feature/github-checkout -> main"));
     }
 
     #[tokio::test]
@@ -2660,6 +2740,10 @@ mod tests {
                 .iter()
                 .any(|invocation| invocation.method == "api_post")
         );
+        let text = text_content(&result);
+        assert!(text.contains("Opened GitHub pull request."));
+        assert!(text.contains("number=42"));
+        assert!(text.contains("html_url=https://github.com/owner/repo/pull/42"));
     }
 
     #[tokio::test]
